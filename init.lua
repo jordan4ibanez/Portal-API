@@ -1,16 +1,20 @@
 --an api to create portals in the world
-
-minetest.override_item("default:stick", {
-    on_place = function(itemstack, placer, pointed_thing)
-		local node = minetest.get_node(pointed_thing.under).name
-		portal.check_area(pointed_thing.under, "default:mese","default:glass")
-    end,
-})
-
 portal = {}
 
 local max_portal_height = 30
 local max_portal_radius = 15
+
+portal.register_portal = function(activator,desired_node,filler)
+	minetest.override_item(activator, {
+		on_place = function(itemstack, placer, pointed_thing)
+			local node = minetest.get_node(pointed_thing.under).name
+			portal.check_area(pointed_thing.under, desired_node,filler)
+		end,
+	})
+end
+
+--a test
+portal.register_portal("default:stick","default:mese","default:glass")
 
 portal.check_area = function(pos,desired_node,filler_node)
 	local x_check = false
