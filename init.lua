@@ -4,7 +4,7 @@ portal = {}
 local max_portal_height = 30
 local max_portal_radius = 15
 
-portal.register_portal = function(activator,desired_node,filler)
+portal.register_portal = function(activator,desired_node,filler_node)
 	minetest.register_abm({
 		nodenames = {desired_node},
 		neighbors = {activator},
@@ -13,35 +13,19 @@ portal.register_portal = function(activator,desired_node,filler)
 		action = function(pos, node)
 			pos.y = pos.y + 1
 			if minetest.get_node(pos).name == activator then
-				print("test")
 				minetest.remove_node(pos)
 				pos.y = pos.y - 1
-				portal.check_area(pos, desired_node,filler)
+				portal.check_portal(pos,desired_node,"z",filler_node)
 			end
 		end,
 	})
 end
 
-portal.check_area = function(pos,desired_node,filler_node)
-	local x_check = false
-	local z_check = false
-	if minetest.get_node({x=pos.x-1,y=pos.y,z=pos.z}).name == desired_node and minetest.get_node({x=pos.x+1,y=pos.y,z=pos.z}).name == desired_node then
-	   x_check = true
-	end
-	if minetest.get_node({x=pos.x,y=pos.y,z=pos.z-1}).name == desired_node and minetest.get_node({x=pos.x,y=pos.y,z=pos.z+1}).name == desired_node then
-	   z_check = true
-	end
-	--allow both for x shaped portals
-	if x_check == true then
-		portal.check_portal(pos,desired_node,"x",filler_node)
-	elseif z_check == true then
-		portal.check_portal(pos,desired_node,"z",filler_node)
-	end
-
-end
 
 portal.check_portal = function(pos,desired_node,axis,filler_node)
-	local fail = false
+	local xfail = false
+	local yfail = false
+	local zfail = false
 	--go through the height of the portal
 	for y = 1,max_portal_height do
 		--check the cap of the portal
@@ -50,19 +34,20 @@ portal.check_portal = function(pos,desired_node,axis,filler_node)
 			print("got the height cap!")
 			break
 		elseif y == max_portal_height and node ~= desired_node then
-			fail = true
 			print("portal is too tall!")
-			return
+			yfail = true
+			break
 		else
 			if node ~= "air" then
 				fail = true
 				print("failure in the height check")
-				return
+				yfail = true
+				break
 			end
 		end
 		
 		
-		if axis == "x" then
+		if xfail == false then
 			--go through -x to check if portals are able to be created
 			for x = -1,-max_portal_radius,-1 do
 				local node = minetest.get_node({x=pos.x+x,y=pos.y+y,z=pos.z}).name
@@ -71,14 +56,14 @@ portal.check_portal = function(pos,desired_node,axis,filler_node)
 					print("got - x cap!")
 					break
 				elseif x == -max_portal_radius and node ~= desired_node then
-					fail = true
 					print("portal is too wide -x!")
-					return
+					xfail = true
+					break
 				else
 					if node ~= "air" then
-						fail = true
 						print("failure in the - x axis check")
-						return
+						xfail = true
+						break
 					end
 				end
 			end
@@ -90,19 +75,19 @@ portal.check_portal = function(pos,desired_node,axis,filler_node)
 					print("got + x cap!")
 					break
 				elseif x == max_portal_radius and node ~= desired_node then
-					fail = true
 					print("portal is too wide +x!")
-					return
+					xfail = true
+					break
 				else
 					if node ~= "air" then
-						fail = true
 						print("failure in the + x axis check")
-						return
+						xfail = true
+						break
 					end
 				end
 			end
 		end
-		if axis == "z" then
+		if zfail == false then
 			--go through -z to check if portals are able to be created
 			for z = -1,-max_portal_radius,-1 do
 				local node = minetest.get_node({x=pos.x,y=pos.y+y,z=pos.z+z}).name
@@ -111,14 +96,14 @@ portal.check_portal = function(pos,desired_node,axis,filler_node)
 					print("got - z cap!")
 					break
 				elseif z == -max_portal_radius and node ~= desired_node then
-					fail = true
 					print("portal is too wide -z!")
-					return
+					zfail = true
+					break
 				else
 					if node ~= "air" then
-						fail = true
 						print("failure in the - z axis check")
-						return
+						zfail = true
+						break
 					end
 				end
 			end
@@ -130,22 +115,27 @@ portal.check_portal = function(pos,desired_node,axis,filler_node)
 					print("got + z cap!")
 					break
 				elseif z == max_portal_radius and node ~= desired_node then
-					fail = true
 					print("portal is too wide +z!")
-					return
+					zfail = true
+					break
 				else
 					if node ~= "air" then
-						fail = true
 						print("failure in the + z axis check")
-						return
+						zfail = true
+						break
 					end
 				end
 			end
 		end
 	end
 	--if it found a portal that works, create the filler
-	if fail == false then
-		portal.create_portal(pos,desired_node,axis,filler_node)
+	if yfail == false then
+		if xfail == false then
+			portal.create_portal(pos,desired_node,"x",filler_node)
+		end
+		if zfail == false then
+			portal.create_portal(pos,desired_node,"z",filler_node)
+		end
 	end
 end
 
