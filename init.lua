@@ -5,16 +5,22 @@ local max_portal_height = 30
 local max_portal_radius = 15
 
 portal.register_portal = function(activator,desired_node,filler)
-	minetest.override_item(activator, {
-		on_place = function(itemstack, placer, pointed_thing)
-			local node = minetest.get_node(pointed_thing.under).name
-			portal.check_area(pointed_thing.under, desired_node,filler)
+	minetest.register_abm({
+		nodenames = {desired_node},
+		neighbors = {activator},
+		interval = 1,
+		chance = 1,
+		action = function(pos, node)
+			pos.y = pos.y + 1
+			if minetest.get_node(pos).name == activator then
+				print("test")
+				minetest.remove_node(pos)
+				pos.y = pos.y - 1
+				portal.check_area(pos, desired_node,filler)
+			end
 		end,
 	})
 end
-
---a test
-portal.register_portal("default:stick","default:mese","default:glass")
 
 portal.check_area = function(pos,desired_node,filler_node)
 	local x_check = false
@@ -201,5 +207,76 @@ portal.create_portal = function(pos,desired_node,axis,filler_node)
 			end
 		end
 	end
+end
+
+portal.register_filler = function(name,description,texture,particle_texture,post_effect_color)
+	minetest.register_node(name, {
+		description =  description,
+		drawtype = "glasslike",
+		tiles = {
+			texture,
+			texture,
+			texture,
+			texture,
+			--{
+			--	name = "nether_portal.png",
+			--	animation = {
+			--		type = "vertical_frames",
+			--		aspect_w = 16,
+			--		aspect_h = 16,
+			--		length = 0.5,
+			--	},
+			--},
+			--{
+			--	name = "nether_portal.png",
+			--	animation = {
+			--		type = "vertical_frames",
+			--		aspect_w = 16,
+			--		aspect_h = 16,
+			--		length = 0.5,
+			--	},
+			--},
+		},
+		paramtype = "light",
+		sunlight_propagates = true,
+		use_texture_alpha = true,
+		walkable = false,
+		--diggable = false,
+		--pointable = false,
+		buildable_to = false,
+		is_ground_content = false,
+		drop = "",
+		light_source = 13,
+		post_effect_color = post_effect_color,--{a = 180, r = 128, g = 0, b = 128},
+		alpha = 192,
+		
+		--groups = {not_in_creative_inventory = 1}
+		
+		--do on remove remove portal around it
+	})
+	minetest.register_abm({
+		nodenames = {name},
+		interval = 1,
+		chance = 1,
+		action = function(pos, node)
+			minetest.add_particlespawner({
+				amount = 30,
+				time = 1,
+				minpos = {x = pos.x - 0.5, y = pos.y - 0.5, z = pos.z - 0.5},
+				maxpos = {x = pos.x + 0.5, y = pos.y + 0.5, z = pos.z + 0.5},
+				minvel = {x = -0.8, y = -0.8, z = -0.8},
+				maxvel = {x = 0.8, y = 0.8, z = 0.8},
+				minacc = {x=0, y=0, z=0},
+				maxacc = {x=0, y=0, z=0},
+				minexptime = 0.5,
+				maxexptime = 1,
+				minsize = 1,
+				maxsize = 1,
+				collisiondetection = false,
+				vertical = false,
+				texture = particle_texture,
+			})
+		end,
+	})
 end
 
